@@ -1,23 +1,35 @@
-# QuoteFlow V3.1
+# QuoteFlow V3.2
 
-Commercial upgrade focused on the first customer-facing revenue feature: public quotations.
+Commercial SaaS billing foundation built on Supabase + Razorpay Subscriptions.
 
-## New
-- Public quotation URL: `/app.html?quote=TOKEN`
-- Customer can view quotation without logging in
-- Customer can Accept / Reject
-- Response is saved to Supabase
-- Quotation list has Copy link
-- V3.1 landing page
+## Included
+- V3.1 public quotations preserved
+- Free / Pro / Business plan UI
+- Free-plan limits: 25 leads and 10 quotations/month
+- Database triggers enforce those limits server-side
+- Razorpay subscription checkout integration
+- Secure server-side subscription creation via Supabase Edge Function
+- Razorpay webhook verification and automatic plan activation/downgrade
 
-## Deploy
-Deploy the repository root to Vercel. `index.html` is the landing page and `app.html` is the application.
+## Required setup
+Run `supabase/schema_v3_2.sql` in Supabase SQL Editor.
 
-## Database
-Run `supabase/schema_v3_1.sql` in the existing Supabase SQL Editor.
+Deploy the two Edge Functions:
+- `create-razorpay-subscription`
+- `razorpay-webhook`
 
-## Important security note
-The public quotation RPC intentionally exposes only the quotation, business information, and lead customer/project fields needed to display the quote. Do not expose secret keys. The publishable Supabase key may be present in a browser app; never use the service-role key in frontend code.
+Set these function secrets:
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_PRO_PLAN_ID`
+- `RAZORPAY_BUSINESS_PLAN_ID`
+- `RAZORPAY_WEBHOOK_SECRET`
 
-## Next
-Real subscription payments and server-side webhook verification.
+The Supabase function runtime already provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+
+In Razorpay, create the monthly plans for ₹499 and ₹999, then copy their plan IDs into the secrets. Configure the webhook URL as:
+`https://<your-project-ref>.supabase.co/functions/v1/razorpay-webhook`
+
+Subscribe to the relevant subscription events, especially authenticated, activated, charged, pending, halted, cancelled, paused and resumed. Razorpay recommends webhooks for server-side subscription state and payment verification.
+
+Do not commit Razorpay secrets to GitHub.
