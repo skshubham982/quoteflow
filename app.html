@@ -62,7 +62,7 @@ main{flex:1;max-width:1200px;padding:24px;margin:auto}.hidden{display:none!impor
 (function(){
  const params=new URLSearchParams(location.search);
  const token=params.get("quote");
- const upgradePlan=params.get("upgrade");
+ const publicUpgradePlan=params.get("upgrade");
  if(!token) return;
  document.addEventListener("DOMContentLoaded", async function(){
    document.body.innerHTML=`<main style="max-width:850px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif"><div id="publicQuote">Loading quotation…</div></main>`;
