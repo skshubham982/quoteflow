@@ -33,3 +33,7 @@ In Razorpay, create the monthly plans for ₹499 and ₹999, then copy their pla
 Subscribe to the relevant subscription events, especially authenticated, activated, charged, pending, halted, cancelled, paused and resumed. Razorpay recommends webhooks for server-side subscription state and payment verification.
 
 Do not commit Razorpay secrets to GitHub.
+
+
+## V3.2.1 frontend payment CTA
+The landing-page Pro and Business buttons now route authenticated users directly to Plans & billing, where the existing Razorpay subscription flow can be started. No credentials are stored in the frontend.

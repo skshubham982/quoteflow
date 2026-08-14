@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QuoteFlow V2.1</title>
+<title>QuoteFlow V3.2 Cloud</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
@@ -62,6 +62,7 @@ main{flex:1;max-width:1200px;padding:24px;margin:auto}.hidden{display:none!impor
 (function(){
  const params=new URLSearchParams(location.search);
  const token=params.get("quote");
+ const upgradePlan=params.get("upgrade");
  if(!token) return;
  document.addEventListener("DOMContentLoaded", async function(){
    document.body.innerHTML=`<main style="max-width:850px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif"><div id="publicQuote">Loading quotation…</div></main>`;
@@ -101,6 +102,7 @@ main{flex:1;max-width:1200px;padding:24px;margin:auto}.hidden{display:none!impor
 </script>
 
 <script>
+const upgradePlan=new URLSearchParams(location.search).get("upgrade");
 const SUPABASE_URL="https://fhofconltexkjiqzssuo.supabase.co";
 const SUPABASE_KEY="sb_publishable_LNuQY09bgQcRxJVWbbnVjQ_1ZxigA9U";
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -113,7 +115,7 @@ function msg(t){$("authMsg").textContent=t;$("authMsg").classList.remove("hidden
 async function signup(){let e=$("email").value.trim(),p=$("password").value;if(!e||p.length<6)return msg("Enter an email and a password of at least 6 characters.");let{data,error}=await sb.auth.signUp({email:e,password:p});if(error)return msg(error.message);msg("Account created. Check your email if confirmation is enabled, then sign in.");}
 async function login(){let e=$("email").value.trim(),p=$("password").value;let{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return msg(error.message);await start(data.user)}
 async function logout(){await sb.auth.signOut();location.reload()}
-async function start(u){user=u;$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=u.email;await ensureBusiness();await refresh()}
+async function start(u){user=u;$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=u.email;await ensureBusiness();await refresh();if(["pro","business"].includes(upgradePlan)){view("plans");billingMessage(`You selected ${upgradePlan==="pro"?"Pro ₹499/month":"Business ₹999/month"}. Click Upgrade to continue to Razorpay.`)}}
 async function ensureBusiness(){let{data,error}=await sb.from("businesses").select("*").eq("owner_id",user.id).limit(1);if(error){alert(error.message);return}if(data?.length){business=data[0];loadSettings()}else{let{data:d,error:e}=await sb.from("businesses").insert({owner_id:user.id,name:"My Business",terms:"Thank you for the opportunity."}).select().single();if(e)alert(e.message);else{business=d;loadSettings()}}}
 async function refresh(){let{data:l,error}=await sb.from("leads").select("*").eq("owner_id",user.id).order("created_at",{ascending:false});if(error)alert(error.message);leads=l||[];let{data:q}=await sb.from("quotations").select("*").eq("owner_id",user.id).order("created_at",{ascending:false});quotes=q||[];let{data:subs}=await sb.from("subscriptions").select("*").eq("owner_id",user.id).order("created_at",{ascending:false}).limit(1);subscription=subs?.[0]||null;render();renderPlans()}
 function view(id,btn){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("aside button").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="quote"){fillQuoteLeads();renderItems();renderQuote()}if(id==="plans")renderPlans();render()}
