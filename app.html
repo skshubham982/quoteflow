@@ -54,6 +54,49 @@ main{flex:1;max-width:1200px;padding:24px;margin:auto}.hidden{display:none!impor
 <section id="settings" class="hidden"><h1>Business settings</h1><div class="panel"><div class="formgrid"><label>Business name<input id="biz"></label><label>Phone<input id="bphone"></label><label>Email<input id="bemail"></label><label>Address<input id="baddress"></label><label class="full">Terms & conditions<textarea id="terms"></textarea></label></div><div class="actions"><button class="primary" onclick="saveSettings()">Save settings</button></div></div></section>
 </main></div></div>
 
+
+<script>
+(function(){
+ const params=new URLSearchParams(location.search);
+ const token=params.get("quote");
+ if(!token) return;
+ document.addEventListener("DOMContentLoaded", async function(){
+   document.body.innerHTML=`<main style="max-width:850px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif"><div id="publicQuote">Loading quotation…</div></main>`;
+   try{
+     const client=supabase.createClient("https://fhofconltexkjiqzssuo.supabase.co","sb_publishable_LNuQY09bgQcRxJVWbbnVjQ_1ZxigA9U");
+     const {data,error}=await client.rpc("get_public_quotation",{p_token:token});
+     if(error||!data) throw new Error(error?.message||"Quotation not found");
+     const q=data.quotation, b=data.business;
+     const items=Array.isArray(q.items)?q.items:[];
+     const money=n=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(n)||0);
+     const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+     document.getElementById("publicQuote").innerHTML=`<div style="background:#fff;border:1px solid #e1e5eb;border-radius:18px;padding:28px;box-shadow:0 12px 40px #17203312">
+       <div style="display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #172033;padding-bottom:18px">
+         <div><h1 style="margin:0">${esc(b.name)}</h1><p style="color:#667085">${esc(b.phone||"")} ${b.email?"· "+esc(b.email):""}<br>${esc(b.address||"")}</p></div>
+         <div style="text-align:right"><b>QUOTATION</b><br>${esc(q.quotation_number)}<br><span style="color:#667085">Valid until ${esc(q.valid_until||"-")}</span></div>
+       </div>
+       <p><b>Customer:</b> ${esc(data.customer_name)}<br><b>Project:</b> ${esc(data.project)}</p>
+       <table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Description</th><th style="padding:10px;border-bottom:1px solid #ddd">Qty</th><th style="text-align:right;padding:10px;border-bottom:1px solid #ddd">Price</th><th style="text-align:right;padding:10px;border-bottom:1px solid #ddd">Amount</th></tr></thead>
+       <tbody>${items.map(i=>`<tr><td style="padding:10px;border-bottom:1px solid #eee">${esc(i.desc)}</td><td style="padding:10px;text-align:center;border-bottom:1px solid #eee">${Number(i.qty)||0}</td><td style="padding:10px;text-align:right;border-bottom:1px solid #eee">${money(i.price)}</td><td style="padding:10px;text-align:right;border-bottom:1px solid #eee">${money((Number(i.qty)||0)*(Number(i.price)||0))}</td></tr>`).join("")}</tbody></table>
+       <p style="text-align:right;line-height:1.8">Subtotal: ${money(q.subtotal)}<br>Tax: ${money(q.tax_amount)}<br><b style="font-size:22px">Total: ${money(q.total)}</b></p>
+       <p><b>Terms</b><br>${esc(b.terms||"Thank you for the opportunity.")}</p>
+       <div id="response" style="display:flex;gap:10px;justify-content:center;margin-top:25px">
+         <button id="accept" style="padding:12px 18px;border:0;border-radius:9px;background:#172033;color:#fff;font-weight:800;cursor:pointer">Accept quotation</button>
+         <button id="reject" style="padding:12px 18px;border:0;border-radius:9px;background:#eef2f7;color:#172033;font-weight:800;cursor:pointer">Reject quotation</button>
+       </div>
+     </div>`;
+     const setStatus=async status=>{
+       const {data:res,error:e}=await client.rpc("respond_public_quotation",{p_token:token,p_status:status});
+       if(e) return alert(e.message);
+       document.getElementById("response").innerHTML=`<div style="padding:14px 18px;border-radius:10px;background:#eef2f7;font-weight:800">Quotation marked as ${esc(status)}.</div>`;
+     };
+     document.getElementById("accept").onclick=()=>setStatus("accepted");
+     document.getElementById("reject").onclick=()=>setStatus("rejected");
+   }catch(e){document.getElementById("publicQuote").innerHTML=`<div style="background:#fff;border:1px solid #e1e5eb;border-radius:18px;padding:28px"><h2>Quotation unavailable</h2><p>${String(e.message||e)}</p></div>`}
+ });
+})();
+</script>
+
 <script>
 const SUPABASE_URL="https://fhofconltexkjiqzssuo.supabase.co";
 const SUPABASE_KEY="sb_publishable_LNuQY09bgQcRxJVWbbnVjQ_1ZxigA9U";
@@ -76,7 +119,7 @@ function dateTag(d){if(!d)return"-";let c=d<today()?"overdue":d===today()?"today
 function table(arr){if(!arr.length)return'<div class="empty">No leads found.</div>';return`<table><thead><tr><th>Customer</th><th>Project</th><th>Amount</th><th>Status</th><th>Follow-up</th><th>Actions</th></tr></thead><tbody>${arr.map(x=>`<tr><td><b>${esc(x.customer_name)}</b><br><span class="muted">${esc(x.phone)}</span></td><td>${esc(x.project)}</td><td>${money(x.quotation_amount)}</td><td><span class="tag">${esc(x.status)}</span></td><td>${dateTag(x.follow_up_date)}</td><td><button class="light" onclick="editLead('${x.id}')">Edit</button> <button class="light" onclick="makeQuote('${x.id}')">Quote</button>${x.phone?` <button class="light" onclick="wa('${x.phone}',encodeURIComponent(message(x)))">WhatsApp</button>`:""}</td></tr>`).join("")}</tbody></table>`}
 function renderLeads(){let q=($("search")?.value||"").toLowerCase(),f=$("statusFilter")?.value||"All statuses";$("leadList").innerHTML=table(leads.filter(x=>(f==="All statuses"||x.status===f)&&(x.customer_name+" "+x.project+" "+(x.phone||"")).toLowerCase().includes(q)))}
 function renderFollowups(){let a=leads.filter(x=>x.follow_up_date&&x.follow_up_date<=today()&&!["Won","Lost"].includes(x.status)).sort((a,b)=>a.follow_up_date.localeCompare(b.follow_up_date));$("followList").innerHTML=a.length?table(a):'<div class="empty">No due follow-ups 🎉</div>'}
-function renderQuotes(){$("quoteList").innerHTML=quotes.length?`<table><thead><tr><th>Number</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>${quotes.map(q=>{let l=leads.find(x=>x.id===q.lead_id);return`<tr><td>${esc(q.quotation_number)}</td><td>${esc(l?.customer_name||"-")}</td><td>${money(q.total)}</td><td>${esc(q.created_at?.slice(0,10)||"-")}</td></tr>`}).join("")}</tbody></table>`:'<div class="empty">No quotations saved yet.</div>'}
+function renderQuotes(){$("quoteList").innerHTML=quotes.length?`<table><thead><tr><th>Number</th><th>Customer</th><th>Total</th><th>Date</th><th>Share</th></tr></thead><tbody>${quotes.map(q=>{let l=leads.find(x=>x.id===q.lead_id);return`<tr><td>${esc(q.quotation_number)}</td><td>${esc(l?.customer_name||"-")}</td><td>${money(q.total)}</td><td>${esc(q.created_at?.slice(0,10)||"-")}</td><td>${q.public_token?`<button class="light" onclick="copyQuoteLink('${q.public_token}')">Copy link</button>`:"-"}</td></tr>`}).join("")}</tbody></table>`:'<div class="empty">No quotations saved yet.</div>'}
 function resetLead(){editing=null;$("addTitle").textContent="Add lead";["name","phone","project","amount","action","notes"].forEach(i=>$(i).value="");$("qdate").value=today();$("fdate").value=today();$("status").value="New Lead"}
 async function saveLead(){let payload={owner_id:user.id,business_id:business.id,customer_name:$("name").value.trim(),phone:$("phone").value.trim(),project:$("project").value.trim(),quotation_amount:Number($("amount").value||0),quotation_date:$("qdate").value||null,follow_up_date:$("fdate").value||null,status:$("status").value,next_action:$("action").value,notes:$("notes").value};if(!payload.customer_name||!payload.project)return alert("Customer name and project are required.");let r=editing?await sb.from("leads").update(payload).eq("id",editing).eq("owner_id",user.id):await sb.from("leads").insert(payload);if(r.error)return alert(r.error.message);await refresh();resetLead();view("leads")}
 function editLead(id){let x=leads.find(a=>a.id===id);if(!x)return;editing=id;$("addTitle").textContent="Edit lead";$("name").value=x.customer_name;$("phone").value=x.phone||"";$("project").value=x.project;$("amount").value=x.quotation_amount||0;$("qdate").value=x.quotation_date||"";$("fdate").value=x.follow_up_date||"";$("status").value=x.status;$("action").value=x.next_action||"";$("notes").value=x.notes||"";view("add")}
@@ -88,7 +131,8 @@ function loadQuoteLead(){let x=leads.find(a=>a.id===$("qLead").value);if(x&&quot
 function addItem(){quoteItems.push({desc:"",qty:1,price:0});renderItems();renderQuote()}
 function renderItems(){$("items").innerHTML=`<table><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th></th></tr></thead><tbody>${quoteItems.map((r,i)=>`<tr><td><input value="${esc(r.desc)}" oninput="quoteItems[${i}].desc=this.value;renderQuote()"></td><td><input type="number" value="${r.qty}" oninput="quoteItems[${i}].qty=Number(this.value);renderQuote()"></td><td><input type="number" value="${r.price}" oninput="quoteItems[${i}].price=Number(this.value);renderQuote()"></td><td><button class="light" onclick="quoteItems.splice(${i},1);renderItems();renderQuote()">×</button></td></tr>`).join("")}</tbody></table>`}
 function renderQuote(){let x=leads.find(a=>a.id===$("qLead").value);if(!x){$("quotePreview").innerHTML='<div class="empty">Select a lead to preview.</div>';return}let sub=quoteItems.reduce((a,r)=>a+(Number(r.qty)||0)*(Number(r.price)||0),0),tx=sub*(Number($("tax").value)||0)/100,total=sub+tx;$("quotePreview").innerHTML=`<div class="quote"><div style="border-bottom:2px solid #172033;padding-bottom:12px"><h1>${esc(business?.name||"Your Business")}</h1><div class="muted">${esc(business?.phone||"")} · ${esc(business?.email||"")}<br>${esc(business?.address||"")}</div></div><p><b>Quotation:</b> ${esc($("qNo").value)}<br><b>Customer:</b> ${esc(x.customer_name)}<br><b>Project:</b> ${esc(x.project)}<br><b>Valid until:</b> ${esc($("valid").value)}</p><table><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${quoteItems.map(r=>`<tr><td>${esc(r.desc)}</td><td>${r.qty}</td><td>${money(r.price)}</td><td>${money((r.qty||0)*(r.price||0))}</td></tr>`).join("")}</tbody></table><p class="right">Subtotal: ${money(sub)}<br>Tax: ${money(tx)}<br><b style="font-size:20px">Total: ${money(total)}</b></p><p><b>Terms:</b><br>${esc(business?.terms||"Thank you for the opportunity.")}</p></div>`}
-async function saveQuotation(){let x=leads.find(a=>a.id===$("qLead").value);if(!x)return alert("Select a lead.");let sub=quoteItems.reduce((a,r)=>a+(Number(r.qty)||0)*(Number(r.price)||0),0),tx=sub*(Number($("tax").value)||0)/100,total=sub+tx,payload={owner_id:user.id,business_id:business.id,lead_id:x.id,quotation_number:$("qNo").value,valid_until:$("valid").value||null,tax_percent:Number($("tax").value||0),items:quoteItems,subtotal:sub,tax_amount:tx,total};let{error}=await sb.from("quotations").insert(payload);if(error)return alert(error.message);alert("Quotation saved to the cloud.");await refresh();view("quotations")}
+async function saveQuotation(){let x=leads.find(a=>a.id===$("qLead").value);if(!x)return alert("Select a lead.");let sub=quoteItems.reduce((a,r)=>a+(Number(r.qty)||0)*(Number(r.price)||0),0),tx=sub*(Number($("tax").value)||0)/100,total=sub+tx,payload={owner_id:user.id,business_id:business.id,lead_id:x.id,quotation_number:$("qNo").value||("Q-"+Date.now()),valid_until:$("valid").value||null,tax_percent:Number($("tax").value||0),items:quoteItems,subtotal:sub,tax_amount:tx,total,status:"sent",public_token:crypto.randomUUID().replaceAll("-","").slice(0,24)};let{error}=await sb.from("quotations").insert(payload);if(error)return alert(error.message);alert("Quotation saved to the cloud.");await refresh();view("quotations")}
+async function copyQuoteLink(token){let url=location.origin+location.pathname+"?quote="+token;try{await navigator.clipboard.writeText(url);alert("Public quotation link copied:\n"+url)}catch(e){prompt("Copy quotation link:",url)}}
 function loadSettings(){$("biz").value=business?.name||"";$("bphone").value=business?.phone||"";$("bemail").value=business?.email||"";$("baddress").value=business?.address||"";$("terms").value=business?.terms||""}
 async function saveSettings(){let patch={name:$("biz").value,phone:$("bphone").value,email:$("bemail").value,address:$("baddress").value,terms:$("terms").value};let{data,error}=await sb.from("businesses").update(patch).eq("id",business.id).eq("owner_id",user.id).select().single();if(error)return alert(error.message);business=data;alert("Business settings saved.");renderQuote()}
 (async()=>{let{data}=await sb.auth.getSession();if(data.session)await start(data.session.user)})()

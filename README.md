@@ -1,22 +1,23 @@
-# QuoteFlow V3
+# QuoteFlow V3.1
 
-Commercial SaaS foundation for lead management, follow-ups and quotations.
+Commercial upgrade focused on the first customer-facing revenue feature: public quotations.
 
-## Structure
-- `index.html` — V3 marketing/landing page
-- `app.html` — working cloud application carried forward from V2.1
-- `supabase/schema_v3.sql` — V3 subscription/public-quotation database additions
+## New
+- Public quotation URL: `/app.html?quote=TOKEN`
+- Customer can view quotation without logging in
+- Customer can Accept / Reject
+- Response is saved to Supabase
+- Quotation list has Copy link
+- V3.1 landing page
 
-## Pricing
-- Free — ₹0
-- Pro — ₹499/month
-- Business — ₹999/month
+## Deploy
+Deploy the repository root to Vercel. `index.html` is the landing page and `app.html` is the application.
 
-## Deployment
-Deploy the repository root to Vercel. The landing page opens at `/`; the existing app is available at `/app.html`.
+## Database
+Run `supabase/schema_v3_1.sql` in the existing Supabase SQL Editor.
 
-Review and run `supabase/schema_v3.sql` in the existing Supabase project.
+## Important security note
+The public quotation RPC intentionally exposes only the quotation, business information, and lead customer/project fields needed to display the quote. Do not expose secret keys. The publishable Supabase key may be present in a browser app; never use the service-role key in frontend code.
 
-Payment processing is not fabricated: connecting real subscriptions requires a payment provider account and secure server-side webhook handling.
-
-Never commit Supabase secret/service-role keys.
+## Next
+Real subscription payments and server-side webhook verification.
