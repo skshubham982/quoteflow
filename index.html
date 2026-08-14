@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuoteFlow V2.1</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f5f7fb;color:#172033}
+header{height:64px;background:#fff;border-bottom:1px solid #e4e8ef;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:5}.brand{font-size:21px;font-weight:850}.brand small{font-size:12px;color:#667085}
+button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:#172033;color:#fff}.light{background:#eef2f7;color:#172033}.danger{background:#fff0f0;color:#b42318}
+.layout{display:flex;min-height:calc(100vh - 64px)}aside{width:220px;background:#fff;border-right:1px solid #e4e8ef;padding:15px}aside button{width:100%;text-align:left;margin-bottom:6px;background:transparent}.active{background:#eef2f7!important}
+main{flex:1;max-width:1200px;padding:24px;margin:auto}.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card,.panel{background:#fff;border:1px solid #e4e8ef;border-radius:14px;padding:18px}.panel{margin-top:18px}.muted{color:#667085;font-size:13px}.metric{font-size:28px;font-weight:850;margin-top:7px}.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}label{font-size:13px;font-weight:650}input,select,textarea{width:100%;margin-top:6px;padding:10px;border:1px solid #d7dce5;border-radius:8px;font:inherit;background:#fff}textarea{min-height:90px}.full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf0f4;font-size:14px;vertical-align:top}th{font-size:11px;color:#667085;text-transform:uppercase}.tag{padding:4px 8px;border-radius:999px;background:#eef2f7;font-size:12px}.today{background:#fff7e6;color:#9a6700}.overdue{background:#fff0f0;color:#b42318}.empty{text-align:center;padding:35px;color:#667085}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#authScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.authbox{width:min(440px,100%);background:#fff;border:1px solid #e4e8ef;border-radius:18px;padding:28px}.msg{padding:10px;border-radius:8px;background:#eef2f7;margin-top:12px;font-size:13px}
+.quote{background:#fff;padding:35px;border:1px solid #ddd}.right{text-align:right}
+@media(max-width:800px){aside{display:none}.grid{grid-template-columns:1fr 1fr}.formgrid{grid-template-columns:1fr}.full{grid-column:auto}main{padding:12px}table{display:block;overflow:auto;white-space:nowrap}}
+@media print{header,aside,main>section:not(#quote),#quote>h1,#quote>.panel:first-of-type{display:none!important}.quote{border:0;padding:0}}
+</style>
+</head>
+<body>
+<div id="authScreen">
+<div class="authbox">
+<div class="brand">QuoteFlow <small>V2.1</small></div>
+<h1 id="authTitle">Create your account</h1>
+<p class="muted">Your leads and quotations will be stored securely in your Supabase project.</p>
+<div id="authForm">
+<label>Email<input id="email" type="email" autocomplete="email"></label>
+<label style="display:block;margin-top:12px">Password<input id="password" type="password" autocomplete="new-password"></label>
+<div class="actions"><button class="primary" onclick="signup()">Create account</button><button class="light" onclick="login()">Sign in</button></div>
+<div id="authMsg" class="msg hidden"></div>
+</div></div></div>
+
+<div id="app" class="hidden">
+<header><div class="brand">QuoteFlow <small>V2.1 Cloud</small></div><div><span id="userEmail" class="muted"></span> <button class="light" onclick="logout()">Sign out</button></div></header>
+<div class="layout"><aside>
+<button class="active" onclick="view('dashboard',this)">Dashboard</button><button onclick="view('leads',this)">Leads</button><button onclick="view('followups',this)">Follow-ups</button><button onclick="view('quotations',this)">Quotations</button><button onclick="view('quote',this)">New quotation</button><button onclick="view('settings',this)">Business settings</button>
+</aside><main>
+<section id="dashboard"><div class="top"><div><h1>Dashboard</h1><p class="muted">Your cloud-powered quotation follow-up system.</p></div><button class="primary" onclick="view('add')">+ Add lead</button></div>
+<div class="grid"><div class="card"><div class="muted">Leads</div><div class="metric" id="mLeads">0</div></div><div class="card"><div class="muted">Due today</div><div class="metric" id="mToday">0</div></div><div class="card"><div class="muted">Open pipeline</div><div class="metric" id="mPipeline">₹0</div></div><div class="card"><div class="muted">Won revenue</div><div class="metric" id="mWon">₹0</div></div></div>
+<div class="panel"><h2>Recent leads</h2><div id="recent"></div></div></section>
+
+<section id="leads" class="hidden"><div class="top"><h1>Leads</h1><button class="primary" onclick="view('add')">+ Add lead</button></div><div class="panel"><div class="actions"><input id="search" placeholder="Search customer/project" oninput="renderLeads()"><select id="statusFilter" onchange="renderLeads()"><option>All statuses</option><option>New Lead</option><option>Quotation Preparing</option><option>Quotation Sent</option><option>Follow-up Due</option><option>Negotiating</option><option>Won</option><option>Lost</option></select></div><div id="leadList"></div></div></section>
+
+<section id="followups" class="hidden"><h1>Follow-ups</h1><p class="muted">Today and overdue follow-ups.</p><div class="panel"><div id="followList"></div></div></section>
+
+<section id="add" class="hidden"><h1 id="addTitle">Add lead</h1><div class="panel"><div class="formgrid">
+<label>Customer name<input id="name"></label><label>Phone<input id="phone"></label><label>Project<input id="project"></label><label>Quotation amount<input id="amount" type="number" min="0"></label>
+<label>Quotation date<input id="qdate" type="date"></label><label>Follow-up date<input id="fdate" type="date"></label><label>Status<select id="status"><option>New Lead</option><option>Quotation Preparing</option><option>Quotation Sent</option><option>Follow-up Due</option><option>Negotiating</option><option>Won</option><option>Lost</option></select></label><label>Next action<input id="action"></label><label class="full">Notes<textarea id="notes"></textarea></label>
+</div><div class="actions"><button class="primary" onclick="saveLead()">Save lead</button><button class="light" onclick="view('leads')">Cancel</button></div></div></section>
+
+<section id="quotations" class="hidden"><div class="top"><h1>Quotations</h1><button class="primary" onclick="view('quote')">+ New quotation</button></div><div class="panel"><div id="quoteList"></div></div></section>
+
+<section id="quote" class="hidden"><h1>Quotation builder</h1><div class="panel"><div class="formgrid"><label>Lead<select id="qLead" onchange="loadQuoteLead()"></select></label><label>Quotation number<input id="qNo"></label><label>Valid until<input id="valid" type="date"></label><label>Tax %<input id="tax" type="number" value="0" oninput="renderQuote()"></label></div><div id="items" style="margin-top:16px"></div><div class="actions"><button class="light" onclick="addItem()">+ Add item</button><button class="primary" onclick="saveQuotation()">Save quotation</button><button class="light" onclick="window.print()">Print / Save PDF</button></div></div><div id="quotePreview" class="panel"></div></section>
+
+<section id="settings" class="hidden"><h1>Business settings</h1><div class="panel"><div class="formgrid"><label>Business name<input id="biz"></label><label>Phone<input id="bphone"></label><label>Email<input id="bemail"></label><label>Address<input id="baddress"></label><label class="full">Terms & conditions<textarea id="terms"></textarea></label></div><div class="actions"><button class="primary" onclick="saveSettings()">Save settings</button></div></div></section>
+</main></div></div>
+
+<script>
+const SUPABASE_URL="https://fhofconltexkjiqzssuo.supabase.co";
+const SUPABASE_KEY="sb_publishable_LNuQY09bgQcRxJVWbbnVjQ_1ZxigA9U";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let user=null,business=null,leads=[],quotes=[],editing=null,quoteItems=[{desc:"Interior design & execution",qty:1,price:0}];
+
+const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+const money=n=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(n)||0);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function msg(t){$("authMsg").textContent=t;$("authMsg").classList.remove("hidden")}
+async function signup(){let e=$("email").value.trim(),p=$("password").value;if(!e||p.length<6)return msg("Enter an email and a password of at least 6 characters.");let{data,error}=await sb.auth.signUp({email:e,password:p});if(error)return msg(error.message);msg("Account created. Check your email if confirmation is enabled, then sign in.");}
+async function login(){let e=$("email").value.trim(),p=$("password").value;let{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return msg(error.message);await start(data.user)}
+async function logout(){await sb.auth.signOut();location.reload()}
+async function start(u){user=u;$("authScreen").classList.add("hidden");$("app").classList.remove("hidden");$("userEmail").textContent=u.email;await ensureBusiness();await refresh()}
+async function ensureBusiness(){let{data,error}=await sb.from("businesses").select("*").eq("owner_id",user.id).limit(1);if(error){alert(error.message);return}if(data?.length){business=data[0];loadSettings()}else{let{data:d,error:e}=await sb.from("businesses").insert({owner_id:user.id,name:"My Business",terms:"Thank you for the opportunity."}).select().single();if(e)alert(e.message);else{business=d;loadSettings()}}}
+async function refresh(){let{data:l,error}=await sb.from("leads").select("*").eq("owner_id",user.id).order("created_at",{ascending:false});if(error)alert(error.message);leads=l||[];let{data:q}=await sb.from("quotations").select("*").eq("owner_id",user.id).order("created_at",{ascending:false});quotes=q||[];render()}
+function view(id,btn){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("aside button").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="quote"){fillQuoteLeads();renderItems();renderQuote()}render()}
+function render(){let open=leads.filter(x=>!["Won","Lost"].includes(x.status)).reduce((a,x)=>a+Number(x.quotation_amount||0),0),won=leads.filter(x=>x.status==="Won").reduce((a,x)=>a+Number(x.quotation_amount||0),0);$("mLeads").textContent=leads.length;$("mToday").textContent=leads.filter(x=>x.follow_up_date===today()&&!["Won","Lost"].includes(x.status)).length;$("mPipeline").textContent=money(open);$("mWon").textContent=money(won);$("recent").innerHTML=table(leads.slice(0,7));renderLeads();renderFollowups();renderQuotes()}
+function dateTag(d){if(!d)return"-";let c=d<today()?"overdue":d===today()?"today":"";return`<span class="tag ${c}">${esc(d)}${d<today()?" · overdue":d===today()?" · today":""}</span>`}
+function table(arr){if(!arr.length)return'<div class="empty">No leads found.</div>';return`<table><thead><tr><th>Customer</th><th>Project</th><th>Amount</th><th>Status</th><th>Follow-up</th><th>Actions</th></tr></thead><tbody>${arr.map(x=>`<tr><td><b>${esc(x.customer_name)}</b><br><span class="muted">${esc(x.phone)}</span></td><td>${esc(x.project)}</td><td>${money(x.quotation_amount)}</td><td><span class="tag">${esc(x.status)}</span></td><td>${dateTag(x.follow_up_date)}</td><td><button class="light" onclick="editLead('${x.id}')">Edit</button> <button class="light" onclick="makeQuote('${x.id}')">Quote</button>${x.phone?` <button class="light" onclick="wa('${x.phone}',encodeURIComponent(message(x)))">WhatsApp</button>`:""}</td></tr>`).join("")}</tbody></table>`}
+function renderLeads(){let q=($("search")?.value||"").toLowerCase(),f=$("statusFilter")?.value||"All statuses";$("leadList").innerHTML=table(leads.filter(x=>(f==="All statuses"||x.status===f)&&(x.customer_name+" "+x.project+" "+(x.phone||"")).toLowerCase().includes(q)))}
+function renderFollowups(){let a=leads.filter(x=>x.follow_up_date&&x.follow_up_date<=today()&&!["Won","Lost"].includes(x.status)).sort((a,b)=>a.follow_up_date.localeCompare(b.follow_up_date));$("followList").innerHTML=a.length?table(a):'<div class="empty">No due follow-ups 🎉</div>'}
+function renderQuotes(){$("quoteList").innerHTML=quotes.length?`<table><thead><tr><th>Number</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>${quotes.map(q=>{let l=leads.find(x=>x.id===q.lead_id);return`<tr><td>${esc(q.quotation_number)}</td><td>${esc(l?.customer_name||"-")}</td><td>${money(q.total)}</td><td>${esc(q.created_at?.slice(0,10)||"-")}</td></tr>`}).join("")}</tbody></table>`:'<div class="empty">No quotations saved yet.</div>'}
+function resetLead(){editing=null;$("addTitle").textContent="Add lead";["name","phone","project","amount","action","notes"].forEach(i=>$(i).value="");$("qdate").value=today();$("fdate").value=today();$("status").value="New Lead"}
+async function saveLead(){let payload={owner_id:user.id,business_id:business.id,customer_name:$("name").value.trim(),phone:$("phone").value.trim(),project:$("project").value.trim(),quotation_amount:Number($("amount").value||0),quotation_date:$("qdate").value||null,follow_up_date:$("fdate").value||null,status:$("status").value,next_action:$("action").value,notes:$("notes").value};if(!payload.customer_name||!payload.project)return alert("Customer name and project are required.");let r=editing?await sb.from("leads").update(payload).eq("id",editing).eq("owner_id",user.id):await sb.from("leads").insert(payload);if(r.error)return alert(r.error.message);await refresh();resetLead();view("leads")}
+function editLead(id){let x=leads.find(a=>a.id===id);if(!x)return;editing=id;$("addTitle").textContent="Edit lead";$("name").value=x.customer_name;$("phone").value=x.phone||"";$("project").value=x.project;$("amount").value=x.quotation_amount||0;$("qdate").value=x.quotation_date||"";$("fdate").value=x.follow_up_date||"";$("status").value=x.status;$("action").value=x.next_action||"";$("notes").value=x.notes||"";view("add")}
+function message(x){return`Hi ${x.customer_name}, just following up regarding the quotation for your ${x.project}. Please let me know if you have any questions or would like any changes. Happy to help.`}
+function wa(p,t){window.open("https://wa.me/"+p.replace(/\D/g,"")+"?text="+t,"_blank")}
+function makeQuote(id){view("quote");setTimeout(()=>{$("qLead").value=id;loadQuoteLead()},0)}
+function fillQuoteLeads(){$("qLead").innerHTML='<option value="">Select a lead</option>'+leads.map(x=>`<option value="${x.id}">${esc(x.customer_name)} — ${esc(x.project)}</option>`).join("")}
+function loadQuoteLead(){let x=leads.find(a=>a.id===$("qLead").value);if(x&&quoteItems.length===1)quoteItems[0].price=Number(x.quotation_amount||0);renderQuote()}
+function addItem(){quoteItems.push({desc:"",qty:1,price:0});renderItems();renderQuote()}
+function renderItems(){$("items").innerHTML=`<table><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th></th></tr></thead><tbody>${quoteItems.map((r,i)=>`<tr><td><input value="${esc(r.desc)}" oninput="quoteItems[${i}].desc=this.value;renderQuote()"></td><td><input type="number" value="${r.qty}" oninput="quoteItems[${i}].qty=Number(this.value);renderQuote()"></td><td><input type="number" value="${r.price}" oninput="quoteItems[${i}].price=Number(this.value);renderQuote()"></td><td><button class="light" onclick="quoteItems.splice(${i},1);renderItems();renderQuote()">×</button></td></tr>`).join("")}</tbody></table>`}
+function renderQuote(){let x=leads.find(a=>a.id===$("qLead").value);if(!x){$("quotePreview").innerHTML='<div class="empty">Select a lead to preview.</div>';return}let sub=quoteItems.reduce((a,r)=>a+(Number(r.qty)||0)*(Number(r.price)||0),0),tx=sub*(Number($("tax").value)||0)/100,total=sub+tx;$("quotePreview").innerHTML=`<div class="quote"><div style="border-bottom:2px solid #172033;padding-bottom:12px"><h1>${esc(business?.name||"Your Business")}</h1><div class="muted">${esc(business?.phone||"")} · ${esc(business?.email||"")}<br>${esc(business?.address||"")}</div></div><p><b>Quotation:</b> ${esc($("qNo").value)}<br><b>Customer:</b> ${esc(x.customer_name)}<br><b>Project:</b> ${esc(x.project)}<br><b>Valid until:</b> ${esc($("valid").value)}</p><table><thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${quoteItems.map(r=>`<tr><td>${esc(r.desc)}</td><td>${r.qty}</td><td>${money(r.price)}</td><td>${money((r.qty||0)*(r.price||0))}</td></tr>`).join("")}</tbody></table><p class="right">Subtotal: ${money(sub)}<br>Tax: ${money(tx)}<br><b style="font-size:20px">Total: ${money(total)}</b></p><p><b>Terms:</b><br>${esc(business?.terms||"Thank you for the opportunity.")}</p></div>`}
+async function saveQuotation(){let x=leads.find(a=>a.id===$("qLead").value);if(!x)return alert("Select a lead.");let sub=quoteItems.reduce((a,r)=>a+(Number(r.qty)||0)*(Number(r.price)||0),0),tx=sub*(Number($("tax").value)||0)/100,total=sub+tx,payload={owner_id:user.id,business_id:business.id,lead_id:x.id,quotation_number:$("qNo").value,valid_until:$("valid").value||null,tax_percent:Number($("tax").value||0),items:quoteItems,subtotal:sub,tax_amount:tx,total};let{error}=await sb.from("quotations").insert(payload);if(error)return alert(error.message);alert("Quotation saved to the cloud.");await refresh();view("quotations")}
+function loadSettings(){$("biz").value=business?.name||"";$("bphone").value=business?.phone||"";$("bemail").value=business?.email||"";$("baddress").value=business?.address||"";$("terms").value=business?.terms||""}
+async function saveSettings(){let patch={name:$("biz").value,phone:$("bphone").value,email:$("bemail").value,address:$("baddress").value,terms:$("terms").value};let{data,error}=await sb.from("businesses").update(patch).eq("id",business.id).eq("owner_id",user.id).select().single();if(error)return alert(error.message);business=data;alert("Business settings saved.");renderQuote()}
+(async()=>{let{data}=await sb.auth.getSession();if(data.session)await start(data.session.user)})()
+</script></body></html>
