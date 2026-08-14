@@ -1,51 +1,22 @@
-# QuoteFlow
+# QuoteFlow V3
 
-Cloud-based quotation and lead follow-up SaaS for small businesses.
+Commercial SaaS foundation for lead management, follow-ups and quotations.
 
-## Live demo
-https://quoteflowv21cloud.vercel.app/
+## Structure
+- `index.html` — V3 marketing/landing page
+- `app.html` — working cloud application carried forward from V2.1
+- `supabase/schema_v3.sql` — V3 subscription/public-quotation database additions
 
-## Features
-- Supabase email/password authentication
-- Cloud-saved leads and quotations
-- User-isolated data with Row Level Security
-- Sales dashboard and pipeline
-- Follow-up tracking
-- Quotation builder and tax calculation
-- WhatsApp follow-up
-- Business settings
-- Print / Save quotation as PDF
-- Responsive interface
-
-## Tech stack
-HTML5 · CSS3 · JavaScript · Supabase · PostgreSQL · Vercel
-
-## Project structure
-```text
-quoteflow/
-├── index.html
-├── README.md
-├── LICENSE
-├── CONTRIBUTING.md
-├── .gitignore
-├── .env.example
-└── supabase/
-    └── schema.sql
-```
-
-## Supabase setup
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in SQL Editor.
-3. Enable Email authentication.
-4. Configure Authentication → URL Configuration with your production URL.
-5. Never commit a Supabase secret/service-role key.
+## Pricing
+- Free — ₹0
+- Pro — ₹499/month
+- Business — ₹999/month
 
 ## Deployment
-Import this repository into Vercel or another static host. After deployment, set the Supabase Site URL to the production URL.
+Deploy the repository root to Vercel. The landing page opens at `/`; the existing app is available at `/app.html`.
 
-## Roadmap
-- V2.2: quotation templates, customer profiles, quotation statuses, follow-up history
-- V3: subscriptions, payments, teams, analytics, automated reminders, public quotation links
+Review and run `supabase/schema_v3.sql` in the existing Supabase project.
 
-## License
-MIT
+Payment processing is not fabricated: connecting real subscriptions requires a payment provider account and secure server-side webhook handling.
+
+Never commit Supabase secret/service-role keys.
